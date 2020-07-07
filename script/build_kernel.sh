@@ -32,17 +32,8 @@ fi
 
 OCL_VER="2.0"
 
-if [ -e $ROCM_DIR/llvm ] ; then
-  LLVM_DIR=$ROCM_DIR/llvm
-  LIB_DIR=$ROCM_DIR/lib
-else
-  LLVM_DIR=$ROCM_DIR/hcc
-  LIB_DIR=$LLVM_DIR/lib
-fi
-
-BC_DIR=$LIB_DIR/bitcode
-if [ ! -d "$BC_DIR" ] ; then BC_DIR=$LIB_DIR; fi
-
+LLVM_DIR=$ROCM_DIR/llvm
+LIB_DIR=$ROCM_DIR/lib
 CLANG_ROOT=$LLVM_DIR/lib/clang
 CLANG_DIR=`ls -d $CLANG_ROOT/* | head -n 1`
 if [ "$CLANG_DIR" = "" ] ; then
@@ -52,15 +43,10 @@ fi
 
 BIN_DIR=$LLVM_DIR/bin
 INC_DIR=$CLANG_DIR/include
-BITCODE_OPTS="\
-  -Xclang -mlink-bitcode-file -Xclang $BC_DIR/opencl.amdgcn.bc \
-  -Xclang -mlink-bitcode-file -Xclang $BC_DIR/ockl.amdgcn.bc \
-  -Xclang -mlink-bitcode-file -Xclang $BC_DIR/ocml.amdgcn.bc"
-
 for GFXIP in $TGT_LIST ; do
   OBJ_PREF=$GFXIP
   OBJ_FILE="${OBJ_PREF}_${OBJ_NAME}.$SO_EXT"
-  $BIN_DIR/clang -cl-std=CL$OCL_VER -include $INC_DIR/opencl-c.h $BITCODE_OPTS -target amdgcn-amd-amdhsa -mcpu=$GFXIP -mno-code-object-v3 $TEST_NAME.cl -o $DST_DIR/$OBJ_FILE
+  $BIN_DIR/clang -cl-std=CL$OCL_VER -include $INC_DIR/opencl-c.h --hip-device-lib-path=$ROCM_DIR/amdgcn/bitcode -target amdgcn-amd-amdhsa -mcpu=$GFXIP -mno-code-object-v3 $TEST_NAME.cl -o $DST_DIR/$OBJ_FILE
   echo "'$OBJ_FILE' generated"
 done
 
